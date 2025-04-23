@@ -1,6 +1,4 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 session_start();
 include 'db.php';
 
@@ -16,35 +14,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     header("Location: login.php");
 }
 ?>
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Register</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-</head>
-<body>
-<div class="container">
-    <h2>Register</h2>
-    <form method="POST">
-        <div class="form-group">
-            <label>Username</label>
-            <input type="text" name="username" class="form-control" required>
-        </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" name="password" class="form-control" required>
-        </div>
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="email" class="form-control" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Register</button>
-    </form>
-</div>
-</body>
-</html> -->
 
 <!DOCTYPE html>
 <html lang="en">

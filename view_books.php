@@ -3,7 +3,11 @@ session_start();
 include 'db.php';
 
 // Fetch books from the database
-$result = $conn->query("SELECT books.*, authors.name AS author_name, categories.name AS category_name FROM books LEFT JOIN authors ON books.author_id = authors.id LEFT JOIN categories ON books.category_id = categories.id");
+$result = $conn->query("SELECT books.*, categories.name AS category_name FROM books LEFT JOIN categories ON books.category_id = categories.id");
+
+if (!$result) {
+    die("Query failed: " . $conn->error);
+}
 ?>
 
 <!DOCTYPE html>
@@ -12,6 +16,23 @@ $result = $conn->query("SELECT books.*, authors.name AS author_name, categories.
     <meta charset="UTF-8">
     <title>View Books</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        h1, h2 {
+            color: #343a40;
+        }
+        .navbar {
+            margin-bottom: 20px;
+        }
+        .table {
+            margin-top: 20px;
+        }
+        .btn {
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -45,7 +66,7 @@ $result = $conn->query("SELECT books.*, authors.name AS author_name, categories.
                 <tr>
                     <td><?php echo $book['title']; ?></td>
                     <td><?php echo $book['author_name']; ?></td>
-                    <td><?php echo $book['category_name']; ?></td>
+                    <td><?php echo $book['category_name']; ?></td> <!-- Ensure this is correct -->
                     <td>$<?php echo $book['price']; ?></td>
                     <td>
                         <a href="edit_book.php?id=<?php echo $book['id']; ?>" class="btn btn-warning btn-sm">Edit</a>
@@ -61,7 +82,7 @@ $result = $conn->query("SELECT books.*, authors.name AS author_name, categories.
 <!-- Modal for Book Details -->
 <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
-    <div class="modal-content">
+        <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="bookModalLabel">Book Details</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -77,6 +98,10 @@ $result = $conn->query("SELECT books.*, authors.name AS author_name, categories.
         </div>
     </div>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
 <script>
 function fetchBookDetails(bookId) {

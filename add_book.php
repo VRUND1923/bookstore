@@ -2,41 +2,63 @@
 session_start();
 include 'db.php'; // Include your database connection file
 
+// FTP credentials
+$ftp_server = "ftpupload.net";
+$ftp_user = "if0_38768111";
+$ftp_pass = "f7emjnvo9XM5U";
+$ftp_dir = "/htdocs/uploads/";
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Retrieve form data
     $title = $_POST['title'];
-    $author_id = $_POST['author_id'];
+    $author_name = $_POST['author_name']; // Changed to author_name
     $category_id = $_POST['category_id'];
-    $cover_image = $_FILES['cover_image']['name'];
     $price = $_POST['price'];
     $description = $_POST['description'];
 
-    // Move the uploaded file to the desired directory
-    move_uploaded_file($_FILES['cover_image']['tmp_name'], "uploads/" . $cover_image);
+    // Handle image upload via FTP
+    $cover_image = $_FILES['cover_image']['name'];
+    $tmp_name = $_FILES['cover_image']['tmp_name'];
+    $ext = pathinfo($cover_image, PATHINFO_EXTENSION);
+    $filename = uniqid("book_", true) . "." . $ext;
+    $ftp_path = $ftp_dir . $filename;
 
-    // Prepare the SQL statement
-    $stmt = $conn->prepare("INSERT INTO books (title, author_id, category_id, cover_image, price, description) VALUES (?, ?, ?, ?, ?, ?)");
+    $ftp_conn = ftp_connect($ftp_server);
+    $upload_success = false;
 
-    // Bind parameters
-    // Here, we are binding 6 variables: title (string), author_id (integer), category_id (integer), cover_image (string), price (decimal), description (string)
-    $stmt->bind_param("siisss", $title, $author_id, $category_id, $cover_image, $price, $description);
-
-    // Execute the statement
-    if ($stmt->execute()) {
-        // Redirect or show success message
-        header("Location: view_books.php");
-        exit();
-    } else {
-        echo "Error: " . $stmt->error; // Show error if execution fails
+    if ($ftp_conn && ftp_login($ftp_conn, $ftp_user, $ftp_pass)) {
+        ftp_pasv($ftp_conn, true);
+        if (ftp_put($ftp_conn, $ftp_path, $tmp_name, FTP_BINARY)) {
+            $upload_success = true;
+        }
+        ftp_close($ftp_conn);
     }
 
-    // Close the statement
-    $stmt->close();
+    if ($upload_success) {
+        // Save only the filename in the DB
+        $stmt = $conn->prepare("INSERT INTO books (title, author_name, category_id, cover_image, price, description) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssiiss", $title, $author_name, $category_id, $filename, $price, $description);
+
+        if ($stmt->execute()) {
+            header("Location: view_books.php");
+            exit();
+        } else {
+            echo "Error: " . $stmt->error;
+        }
+
+        $stmt->close();
+    } else {
+        echo "<div style='color:red;'>Failed to upload image to FTP server.</div>";
+    }
 }
 
-// Fetch authors and categories for the form (optional)
-$authors = $conn->query("SELECT * FROM authors");
-$categories = $conn->query("SELECT * FROM categories");
+// Fetch categories (you can also hardcode them if you prefer)
+$categories = [
+    1 => "Fiction",
+    2 => "Non-Fiction",
+    3 => "Science",
+    4 => "Biography",
+    5 => "Fantasy"
+];
 ?>
 
 <!DOCTYPE html>
@@ -45,6 +67,23 @@ $categories = $conn->query("SELECT * FROM categories");
     <meta charset="UTF-8">
     <title>Add Book</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        h1, h2 {
+            color: #343a40;
+        }
+        .navbar {
+            margin-bottom: 20px;
+        }
+        .table {
+            margin-top: 20px;
+        }
+        .btn {
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body class="bg-light">
 <div class="container mt-5">
@@ -55,26 +94,21 @@ $categories = $conn->query("SELECT * FROM categories");
             <input type="text" name="title" class="form-control" required>
         </div>
         <div class="form-group">
-            <label>Author</label>
-            <select name="author_id" class="form-control" required>
-                <?php while ($author = $authors->fetch_assoc()): ?>
-                    <option value="<?php echo $author['id']; ?>"><?php echo $author['name']; ?></option>
-                <?php endwhile; ?>
-            </select>
+            <label>Author Name</label>
+            <input type="text" name="author_name" class="form-control" required> <!-- Changed to text input -->
         </div>
         <div class="form-group">
             <label>Category</label>
             <select name="category_id" class="form-control" required>
-                <?php while ($category = $categories->fetch_assoc()): ?>
-                    <option value="<?php echo $category['id']; ?>"><?php echo $category['name']; ?></option>
-                <?php endwhile; ?>
+                <?php foreach ($categories as $id => $name): ?>
+                    <option value="<?php echo $id; ?>"><?php echo $name; ?></option>
+                <?php endforeach; ?>
             </select>
         </div>
         <div class="form-group">
             <label>Price</label>
             <input type="number" name="price" class="form-control" step="0.01" required>
-        </div>
-        <div class="form-group">
+            <div class="form-group">
             <label>Description</label>
             <textarea name="description" class="form-control" rows="4" required></textarea>
         </div>
